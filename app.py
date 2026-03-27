@@ -1,24 +1,23 @@
+import streamlit as st
 import pandas as pd
 import numpy as np
 
 np.random.seed(42)
 
 def generate_salary(level):
-  ranges = {
-      'Entry': (30000, 50000),
-      'Junior': (45000, 75000),
-      'Senior': (70000, 110000),
-      'Manager': (100000, 150000),
-      'Director': (140000, 220000)
-  }
-
-  low, high = ranges[level]
-
-  return np.random.randint(low,high)
+    ranges = {
+        'Entry': (30000, 50000),
+        'Junior': (45000, 75000),
+        'Senior': (70000, 110000),
+        'Manager': (100000, 150000),
+        'Director': (140000, 220000)
+    }
+    low, high = ranges[level]
+    return np.random.randint(low, high)
 
 def generate_market_salary(level):
     ranges = {
-        'Entry':    (35000, 55000),  
+        'Entry':    (35000, 55000),
         'Junior':   (44000, 80000),
         'Senior':   (75000, 115000),
         'Manager':  (105000, 155000),
@@ -29,22 +28,19 @@ def generate_market_salary(level):
 
 countries = ['Australia', 'Korea', 'Singapore', 'USA', 'UK']
 levels = ['Entry', 'Junior', 'Senior', 'Manager', 'Director']
-
 n = 625
 
 internal_data = {
     'country': np.random.choice(countries, n),
     'level': np.random.choice(levels, n)
-  }
+}
 internal_data['salary'] = [generate_salary(l) for l in internal_data['level']]
-internal_data['currency'] = ['USD'] * n
 
 market_data = {
     'country': np.random.choice(countries, n),
     'level': np.random.choice(levels, n)
 }
 market_data['salary'] = [generate_market_salary(l) for l in market_data['level']]
-market_data['currency'] = ['USD'] * n
 
 internal_df = pd.DataFrame(internal_data)
 market_df = pd.DataFrame(market_data)
@@ -52,10 +48,10 @@ market_df = pd.DataFrame(market_data)
 internal = (
     internal_df.groupby(['country', 'level'])['salary']
     .agg([
-           ('in_p25', lambda x: x.quantile(0.25))
-         , ('in_median', 'median')
-         , ('in_p75', lambda x: x.quantile(0.75))
-         ])
+        ('in_p25', lambda x: x.quantile(0.25)),
+        ('in_median', 'median'),
+        ('in_p75', lambda x: x.quantile(0.75))
+    ])
     .astype(int)
     .reindex(levels, level=1)
     .reset_index()
@@ -64,10 +60,10 @@ internal = (
 market = (
     market_df.groupby(['country', 'level'])['salary']
     .agg([
-           ('mk_p25', lambda x: x.quantile(0.25))
-         , ('mk_median', 'median')
-         , ('mk_p75', lambda x: x.quantile(0.75))
-         ])
+        ('mk_p25', lambda x: x.quantile(0.25)),
+        ('mk_median', 'median'),
+        ('mk_p75', lambda x: x.quantile(0.75))
+    ])
     .astype(int)
     .reindex(levels, level=1)
     .reset_index()
@@ -75,47 +71,6 @@ market = (
 
 combined = internal.merge(market, on=['country', 'level'])
 combined['recommended'] = combined[['in_median', 'mk_median']].max(axis=1)
-
-print(combined)
-
-# enter and answer data
-
-def answer_salary():
-  coun = input("Enter the country: ")
-  lev = input("Enter the level: ")
-  result = get_salary(coun, lev)
-
-  if result.empty == True:
-     print()
-     print("Please check the country and level you entered.")
-
-  else:
-      internal_median = result['in_median'].values[0]
-      market_median = result['mk_median'].values[0]
-      recommended = result['recommended'].values[0]
-      source = 'Market' if market_median > internal_median else 'Internal'
-      variance = market_median - internal_median
-      variance_pct = variance / internal_median * 100
-
-      print()
-      print("=" * 45)
-      print(f"  Country : {coun}")
-      print(f"  Level   : {lev}")
-      print("=" * 45)
-      print(f"  Internal Median : ${internal_median:,.0f}")
-      print(f"  Market Median   : ${market_median:,.0f}")
-      print(f"  Variance        : ${variance:,.0f} ({variance_pct:+.1f}%)")
-      print("-" * 45)
-      print(f"  Recommended     : ${recommended:,.0f} ({source})")
-      print("=" * 45)
-
-
-def get_salary(country, level):
-    result = combined[(combined['country'] == country) & (combined['level'] == level)].copy()
-    return result
-
-
-answer_salary()
 
 # Streamlit UI
 st.title('Compensation Benchmarking Tool')
@@ -130,8 +85,8 @@ with col2:
 result = combined[(combined['country'] == country) & (combined['level'] == level)].copy()
 
 if not result.empty:
-    internal_median = result['median'].values[0]
-    market_median = result['market_median'].values[0]
+    internal_median = result['in_median'].values[0]
+    market_median = result['mk_median'].values[0]
     recommended = result['recommended'].values[0]
     source = 'Market' if market_median > internal_median else 'Internal'
     variance = market_median - internal_median
