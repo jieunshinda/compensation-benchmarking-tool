@@ -71,8 +71,8 @@ market = (
 
 combined = internal.merge(market, on=['country', 'level'])
 combined['recommended'] = (
-        ROUND((combined['in_median'] + combined['mk_median'])/2, -2)
-)
+        (combined['in_median'] + combined['mk_median']) / 2
+).round(-2).astype(int)
 
 # Streamlit UI
 st.title('Compensation Benchmarking Tool')
